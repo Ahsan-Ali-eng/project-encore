@@ -668,38 +668,30 @@ setCustomers(customerData);
 
               </div>
 
-              {/* Status - Edit only */}
-              {editingCampaign && (
 
-                <div>
+              {/* Campaign Status */}
+              <div>
+                <label className="block mb-2 text-sm font-medium text-encore-text-secondary">
+                  Campaign Status
+                </label>
 
-                  <label className="block mb-2 text-sm font-medium text-encore-text-secondary">
-                    Campaign Status
-                  </label>
+                <select
+                  name="status"
+                  value={formData.status}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 rounded-lg bg-encore-background border border-encore-border text-encore-text focus:outline-none focus:ring-2 focus:ring-encore-primary"
+                >
+                  {campaignStatuses.map((status) => (
+                    <option
+                      key={status.value}
+                      value={status.value}
+                    >
+                      {status.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-                  <select
-                    name="status"
-                    value={formData.status}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 rounded-lg bg-encore-background border border-encore-border text-encore-text focus:outline-none focus:ring-2 focus:ring-encore-primary"
-                  >
-
-                    {campaignStatuses.map((status) => (
-
-                      <option
-                        key={status.value}
-                        value={status.value}
-                      >
-                        {status.label}
-                      </option>
-
-                    ))}
-
-                  </select>
-
-                </div>
-
-              )}
 
               {/* Delay */}
               {formData.triggerType === "DAYS_AFTER_EVENT" && (

@@ -91,25 +91,15 @@ router.post("/", async (req, res) => {
     }
 
 
-const effectiveChannel = channel ?? existingCampaign.channel;
-
-const effectiveEmailSubject =
-  emailSubject === undefined
-    ? existingCampaign.emailSubject
-    : emailSubject;
-
-const effectiveEmailBody =
-  emailBody === undefined
-    ? existingCampaign.emailBody
-    : emailBody;
+const effectiveChannel = channel ?? "SMS";
 
 if (
   (effectiveChannel === "EMAIL" || effectiveChannel === "BOTH") &&
   (
-    typeof effectiveEmailSubject !== "string" ||
-    !effectiveEmailSubject.trim() ||
-    typeof effectiveEmailBody !== "string" ||
-    !effectiveEmailBody.trim()
+    typeof emailSubject !== "string" ||
+    !emailSubject.trim() ||
+    typeof emailBody !== "string" ||
+    !emailBody.trim()
   )
 ) {
   return res.status(400).json({
