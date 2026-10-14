@@ -1,0 +1,12 @@
+@theme {
+  --color-encore-background: #020617;
+  --color-encore-surface: #18181b;
+  --color-encore-border: #27272a;
+
+  --color-encore-primary: #2563eb;
+  --color-encore-primary-hover: #1d4ed8;
+
+  --color-encore-text: #ffffff;
+  --color-encore-text-secondary: #d4d4d8;
+  --color-encore-text-muted: #a1a1aa;
+}

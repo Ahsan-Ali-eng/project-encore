@@ -1,0 +1,320 @@
+generator client {
+  provider                 = "prisma-client"
+  output                   = "../generated/prisma"
+  moduleFormat             = "esm"
+  generatedFileExtension   = "ts"
+  importFileExtension      = "ts"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum CustomerActivityType {
+  PURCHASE
+  SERVICE_COMPLETED
+  REVIEW_RECEIVED
+  NOTE
+  OTHER
+}
+
+enum CampaignType {
+  FOLLOW_UP
+  PROMOTION
+  SERVICE_REMINDER
+  REVIEW_REQUEST
+  RE_ENGAGEMENT
+  CUSTOM
+}
+
+enum CampaignChannel {
+  SMS
+  EMAIL
+  BOTH
+}
+
+enum CampaignStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum AutomationExecutionStatus {
+  SUCCESS
+  FAILED
+  SKIPPED
+}
+
+enum SmsDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum SmsMessageStatus {
+  QUEUED
+  ACCEPTED
+  SENT
+  DELIVERED
+  FAILED
+  RECEIVED
+  SIMULATED
+}
+
+enum EmailMessageStatus {
+  QUEUED
+  ACCEPTED
+  SENT
+  DELIVERED
+  BOUNCED
+  FAILED
+  SIMULATED
+}
+
+enum CampaignTriggerType {
+  MANUAL
+  AFTER_PURCHASE
+  AFTER_SERVICE
+  DAYS_AFTER_EVENT
+  SERVICE_DUE
+  SCHEDULED
+}
+
+model Customer {
+  id             String              @id @default(uuid())
+  organizationId String
+  name           String
+  email          String?
+  phone          String?
+  status         String              @default("active")
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  services       CustomerService[]
+  campaignRecipients CampaignRecipient[]
+  activities CustomerActivity[]
+  messages SmsMessage[]
+
+  @@index([organizationId])
+}
+
+model CustomerService {
+  id             String    @id @default(uuid())
+  organizationId String
+  customerId     String
+  serviceName    String
+  lastServiceAt  DateTime?
+  nextServiceAt  DateTime?
+  notes          String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([customerId])
+  @@index([organizationId, nextServiceAt])
+}
+
+model CustomerActivity {
+  id             String               @id @default(uuid())
+  organizationId String
+  customerId     String
+  type           CustomerActivityType
+  title          String
+  description    String?
+  occurredAt     DateTime             @default(now())
+  metadata       Json?
+  createdAt      DateTime             @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([customerId])
+  @@index([organizationId, occurredAt])
+  @@index([organizationId, type])
+}
+
+model Campaign {
+  id                 String               @id @default(uuid())
+  organizationId     String
+
+  name               String
+  description        String?
+
+  type               CampaignType        @default(FOLLOW_UP)
+  channel            CampaignChannel     @default(SMS)
+  status             CampaignStatus      @default(DRAFT)
+  triggerType        CampaignTriggerType @default(MANUAL)
+
+  delayDays          Int                  @default(0)
+
+  offerText          String?
+  offerExpiresAt     DateTime?
+
+  serviceName        String?
+  reminderDaysBefore Int                  @default(0)
+
+  messageTemplate    String?
+
+  emailSubject       String?
+  emailBody          String?
+
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  recipients         CampaignRecipient[]
+  automationExecutions AutomationExecution[] @relation("CampaignAutomationExecutions")
+  messages SmsMessage[]
+
+  @@index([organizationId])
+  @@index([organizationId, status])
+  @@index([organizationId, type])
+}
+
+model CampaignRecipient {
+  id             String   @id @default(uuid())
+  organizationId String
+  campaignId     String
+  customerId     String
+  createdAt      DateTime @default(now())
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  messages SmsMessage[]
+
+  @@unique([campaignId, customerId])
+  @@index([organizationId])
+  @@index([campaignId])
+  @@index([customerId])
+}
+
+model AutomationExecution {
+  id                String                    @id @default(uuid())
+  organizationId    String
+  campaignId        String
+  status            AutomationExecutionStatus @default(SUCCESS)
+  eligibleCustomers Int                       @default(0)
+  recipientsCreated Int                       @default(0)
+  startedAt         DateTime                  @default(now())
+  completedAt       DateTime?
+  errorMessage      String?
+
+  campaign Campaign @relation("CampaignAutomationExecutions", fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([campaignId])
+  @@index([organizationId, startedAt])
+}
+
+model SmsMessage {
+  id                 String           @id @default(uuid())
+  organizationId     String
+  customerId         String?
+  campaignId         String?
+  campaignRecipientId String?
+
+  direction          SmsDirection
+  status             SmsMessageStatus @default(QUEUED)
+
+  fromNumber         String
+  toNumber           String
+  body               String
+
+  provider           String           @default("TELNYX")
+  providerMessageId  String?          @unique
+  idempotencyKey     String?          @unique
+  errorMessage       String?
+
+  receivedAt         DateTime?
+  sentAt             DateTime?
+  deliveredAt        DateTime?
+
+  metadata           Json?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  customer           Customer?        @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  campaign           Campaign?        @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  campaignRecipient  CampaignRecipient? @relation(fields: [campaignRecipientId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([organizationId, createdAt])
+  @@index([organizationId, customerId, createdAt])
+  @@index([campaignId])
+  @@index([campaignRecipientId])
+  @@index([organizationId, direction, status])
+}
+
+model OrganizationEmailSettings {
+  id                    String   @id @default(uuid())
+  organizationId        String   @unique
+
+  senderName            String?
+  senderEmail           String?
+  replyToEmail           String?
+
+  domain                String?
+  resendDomainId        String?
+  verificationStatus    String   @default("NOT_CONFIGURED")
+  verificationError     String?
+  lastVerifiedAt        DateTime?
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([verificationStatus])
+}
+
+model EmailMessage {
+  id                   String   @id @default(uuid())
+  organizationId       String
+
+  customerId           String?
+  campaignId           String?
+  campaignRecipientId  String?
+
+  status               EmailMessageStatus @default(QUEUED)
+
+  fromName             String
+  fromEmail            String
+  replyToEmail         String?
+  toEmail              String
+  subject              String
+  body                 String
+
+  provider             String   @default("RESEND")
+  providerMessageId    String?  @unique
+  idempotencyKey       String?  @unique
+  errorMessage         String?
+
+  sentAt               DateTime?
+  deliveredAt          DateTime?
+  bouncedAt            DateTime?
+
+  metadata             Json?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([organizationId, createdAt])
+  @@index([organizationId, status])
+}
+
+
+model EmailWebhookEvent {
+  id                 String   @id @default(uuid())
+  provider           String   @default("RESEND")
+  providerEventId    String   @unique
+  eventType          String
+  providerMessageId  String?
+  processed          Boolean  @default(false)
+  processingError    String?
+  payload            Json
+  receivedAt         DateTime @default(now())
+  processedAt        DateTime?
+
+  @@index([providerMessageId])
+  @@index([eventType, receivedAt])
+  @@index([processed, receivedAt])
+}
