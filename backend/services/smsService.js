@@ -90,8 +90,7 @@ export async function sendSms({
     );
   }
 
-  const scopedIdempotencyKey =
-    `${organizationId}:${idempotencyKey.trim()}`;
+  const scopedIdempotencyKey = `${organizationId}:${idempotencyKey.trim()}`;
 
   const simulationMode =
     process.env.SMS_SIMULATION_MODE === "true";
@@ -170,7 +169,10 @@ export async function sendSms({
     });
   } catch (error) {
     await prisma.smsMessage.update({
-      where: { id: result.message.id },
+      where: {
+        id: result.message.id,
+        organizationId,
+      },
       data: {
         status: "FAILED",
         errorMessage:
@@ -191,7 +193,10 @@ export async function sendSms({
   const providerMessage = response.data;
 
   const savedMessage = await prisma.smsMessage.update({
-    where: { id: result.message.id },
+    where: {
+      id: result.message.id,
+      organizationId,
+    },
     data: {
       status: "ACCEPTED",
       providerMessageId: providerMessage.id,

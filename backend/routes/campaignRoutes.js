@@ -245,6 +245,7 @@ if (
     const campaign = await prisma.campaign.update({
       where: {
         id,
+        organizationId: orgId,
       },
       data: {
         ...(name !== undefined && { name: name.trim() }),
@@ -590,6 +591,7 @@ router.delete("/:id", async (req, res) => {
     await prisma.campaign.delete({
       where: {
         id,
+        organizationId: orgId,
       },
     });
 

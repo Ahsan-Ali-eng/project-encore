@@ -133,7 +133,10 @@ export async function processCampaign(organizationId, campaignId) {
   try {
     if (campaign.status !== "ACTIVE") {
       await prisma.automationExecution.update({
-        where: { id: execution.id },
+        where: {
+          id: execution.id,
+          organizationId,
+        },
         data: {
           status: "SKIPPED",
           completedAt: new Date(),
@@ -159,7 +162,10 @@ export async function processCampaign(organizationId, campaignId) {
 
     if (eligibleCustomers.length === 0) {
       await prisma.automationExecution.update({
-        where: { id: execution.id },
+        where: {
+          id: execution.id,
+          organizationId,
+        },
         data: {
           completedAt: new Date(),
           eligibleCustomers: 0,
@@ -294,7 +300,10 @@ export async function processCampaign(organizationId, campaignId) {
     }
 
     await prisma.automationExecution.update({
-      where: { id: execution.id },
+      where: {
+        id: execution.id,
+        organizationId,
+      },
       data: {
         status: smsFailures > 0 ? "FAILED" : "SUCCESS",
         eligibleCustomers: eligibleCustomers.length,
@@ -319,7 +328,10 @@ export async function processCampaign(organizationId, campaignId) {
     };
   } catch (error) {
     await prisma.automationExecution.update({
-      where: { id: execution.id },
+      where: {
+        id: execution.id,
+        organizationId,
+      },
       data: {
         status: "FAILED",
         completedAt: new Date(),
